@@ -1,0 +1,22 @@
+# dsh-plugin-wechat bundle patch —— 由 `dsh plugin --profile web add dsh-plugin-wechat`
+# 自动追加为 profile bundle 层（package.json 的 dsh.profile.bundles），无需手动编辑任何 DSH 文件。
+#
+# 插件在 DSH 进程内启动一个 OpenAI 兼容 HTTP 端点（默认 127.0.0.1:8787），
+# OpenClaw（微信通道）把模型请求指向这里，DSH 就是微信机器人的大脑。
+#
+# 可覆盖配置（也支持环境变量，见 README 配置表）：
+#   host           监听地址,默认 127.0.0.1(仅本机,建议保持)
+#   port           监听端口,默认 8787
+#   apiKey         共享密钥;留空表示不鉴权(仅本机监听时安全)
+#   sessionMode    per-user(每个微信发送者一个 DSH 会话) | single(全部共用)
+#   provider       DSH agent 使用的模型 provider,留空用 DSH 设置里的默认值
+#   model          DSH agent 使用的模型,留空用 DSH 设置里的默认值
+#   idleTimeoutMs  单轮回复超时,默认 180000
+- insert:
+    - id: wechat
+      name: dsh-plugin-wechat
+      config:
+        host: 127.0.0.1
+        port: 8787
+        apiKey: ''
+        sessionMode: per-user
