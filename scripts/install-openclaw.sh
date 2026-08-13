@@ -11,7 +11,7 @@
 #   bash scripts/install-openclaw.sh 8899       # 自定义 DSH 桥端口
 #
 # 前提：Node.js >= 22、bash、能联网、手机装了微信。
-# 风险提示：个人微信自动化有封号风险，强烈建议使用微信小号。
+# 提示：走腾讯官方 ClawBot（iLink）通道；建议使用微信小号绑定。
 # =============================================================================
 set -euo pipefail
 
@@ -85,7 +85,7 @@ node -e '
 if [ -n "${API_KEY}" ]; then
   say "已写入共享密钥（来自环境变量 WECHAT_BRIDGE_API_KEY）"
 else
-  say "未设置 WECHAT_BRIDGE_API_KEY —— DSH 桥未启用鉴权（仅本机监听，风险可控）。"
+  say "未设置 WECHAT_BRIDGE_API_KEY —— DSH 桥未启用鉴权（仅监听本机）。"
   warn "若要鉴权：export WECHAT_BRIDGE_API_KEY=你的密钥 后重新运行本脚本。"
 fi
 
