@@ -256,7 +256,7 @@ function lastUserText(messages: unknown): string | undefined {
     const content = message.content;
     if (typeof content === 'string') {
       const text = content.trim();
-      if (text) return text;
+      if (text) return stripOpenclawWrapper(text);
       continue;
     }
     if (Array.isArray(content)) {
@@ -267,8 +267,27 @@ function lastUserText(messages: unknown): string | undefined {
         })
         .join('')
         .trim();
-      if (text) return text;
+      if (text) return stripOpenclawWrapper(text);
     }
   }
   return undefined;
+}
+
+/**
+ * 剥离 OpenClaw 注入的会话元数据包装，只保留真实用户消息。
+ *
+ * OpenClaw 转发微信消息时会包装成：
+ *   "[时间] Conversation info (untrusted metadata):\n```json\n{...}\n```\n\n<真实消息>"
+ * 若不剥离，DSH agent 会把这段元数据也当用户输入，导致回复串味、变慢。
+ */
+function stripOpenclawWrapper(text: string): string {
+  const marker = 'Conversation info (untrusted metadata):';
+  const idx = text.indexOf(marker);
+  if (idx === -1) return text.trim();
+  const after = text.slice(idx + marker.length);
+  const fence = after.indexOf('```');
+  if (fence === -1) return text.trim();
+  const closeFence = after.indexOf('```', fence + 3);
+  if (closeFence === -1) return text.trim();
+  return after.slice(closeFence + 3).trim();
 }

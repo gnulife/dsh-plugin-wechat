@@ -106,7 +106,7 @@ if ! grep -q '^llm-deepseek:' "${DSH_SETTINGS}" 2>/dev/null; then
     let body = "";
     try { body = fs.readFileSync(p, "utf8"); } catch {}
     if (!body.trim().endsWith("\n")) body += "\n";
-    body += "\n# DeepSeek 模型适配器（dsh-plugin-wechat 自动写入）\nllm-deepseek:\n  thinking: enabled\n  reasoningEffort: high\n  maxTokens: 8192\n";
+    body += "\n# DeepSeek 模型适配器（dsh-plugin-wechat 自动写入）\nllm-deepseek:\n  thinking: disabled\n  maxTokens: 4096\n";
     fs.writeFileSync(p, body);
   ' "${DSH_SETTINGS}"
 fi

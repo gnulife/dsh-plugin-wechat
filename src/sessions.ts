@@ -117,6 +117,19 @@ export class SessionManager {
       sessionId,
       agentOptions,
       ...(cwd ? { meta: { cwd } } : {}),
+      setup: (agentCtx) => {
+        // 微信机器人模式：禁止调用工具，只输出文本回复。
+        // 否则模型会输出 `<tool_calls>` 文本（工具不会真正执行），把命令/工具残留发到微信。
+        agentCtx.systemPrompt.section({
+          name: 'wechat-bot-mode',
+          order: -50,
+          text:
+            '你是运行在 DeepSeek Harness 中的个人微信聊天机器人。' +
+            '必须遵守：1) 只输出纯文本回复，直接、简洁、友好，用中文；' +
+            '2) 禁止调用任何工具（包括 bash/exec_command、文件读写、网页搜索等），只聊天回答；' +
+            '3) 不确定的事情如实说明，不要编造。',
+        });
+      },
     });
     return { handle, chain: Promise.resolve() };
   }
