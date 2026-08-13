@@ -7,12 +7,12 @@
 **准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信小号**（勿用主号，有封号风险）。
 
 ```bash
-# 1. 下载本仓库
-git clone https://github.com/gnulife/dsh-plugin-wechat.git && cd dsh-plugin-wechat
-
-# 2. 一条命令：自动安装 DSH、本插件、OpenClaw、微信通道，并启动全部
-bash scripts/setup.sh
+# 一条命令：自动安装 DSH、本插件、OpenClaw、微信通道，并启动全部
+npx -y dsh-plugin-wechat
 ```
+
+> 不想用 npx 也可以：`npm i -g dsh-plugin-wechat` 后运行 `dsh-wechat-setup`；
+> 或从 GitHub 仓库运行：`git clone https://github.com/gnulife/dsh-plugin-wechat.git && cd dsh-plugin-wechat && bash scripts/setup.sh`
 
 脚本运行过程中只需你做两件事（都只有第一次需要）：
 

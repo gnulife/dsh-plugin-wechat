@@ -64,6 +64,10 @@ git push --tags
 ```bash
 npx -y dsh-plugin-wechat           # 一条命令全自动（装插件到 DSH + OpenClaw + 扫码 + 启动）
 # 或分步：
+npm i -g dsh-plugin-wechat && dsh-wechat-setup
+# 或仅装插件（DSH 官方机制）：
 dsh plugin --profile web add dsh-plugin-wechat
-npx -y dsh-wechat-setup
 ```
+
+> 注意：`npx -y dsh-plugin-wechat` 依赖 bin 名与包名一致（双 bin 已配置）；
+> 若改了包名或 bin，必须保持 `npx <包名>` 能直接执行 setup.sh。
