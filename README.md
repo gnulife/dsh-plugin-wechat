@@ -4,46 +4,48 @@
 
 ## 快速开始（一条命令 + 扫码）
 
-**准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信小号**（勿用主号，有封号风险）、DeepSeek API Key。
+**准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信小号**（勿用主号，有封号风险）。
 
 ```bash
 # 1. 下载本仓库
-git clone <仓库地址> && cd dsh-plugin-wechat
+git clone https://github.com/gnulife/dsh-plugin-wechat.git && cd dsh-plugin-wechat
 
 # 2. 一条命令：自动安装 DSH、本插件、OpenClaw、微信通道，并启动全部
 bash scripts/setup.sh
 ```
 
-脚本运行过程中：
+脚本运行过程中只需你做两件事（都只有第一次需要）：
 
-1. 第一次会弹出一个**二维码** → 用手机**微信小号**扫码确认（仅此一次）。
-2. 脚本会自动写入 DSH 模型路由；**API Key 需要你提供一次**：若已设环境变量 `DEEPSEEK_API_KEY` 则免操作，否则打开 **http://127.0.0.1:3080** → 「设置 → 模型」填入（脚本会提示）。
+1. **扫码**：终端里会出现二维码 → 用手机**微信小号**扫码确认。
+2. **填 API Key**：脚本会提示你打开 **http://127.0.0.1:3080** → 「设置 → 模型」填入 DeepSeek API Key。
 
-然后直接用微信小号给机器人发消息，几秒内收到回复即成功（目前支持文字消息，图片/语音/文件会收到"暂不支持"提示）。
+完成后：直接用微信小号给机器人发消息，几秒内收到回复即成功。
 
-> **如果你在用代理工具（Clash / Surge 等）**：先给微信域名加直连规则，否则扫码会报"网络错误"。
-> Clash 系在「订阅 → 全局扩展配置（Merge）」里加：
-> ```yaml
-> prepend-rules:
->   - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
->   - DOMAIN-SUFFIX,liteapp.weixin.qq.com,DIRECT
-> ```
-> 保存后重载配置再跑 setup.sh。
-
-**日常使用**：重跑 `bash scripts/setup.sh` 即可（幂等，只会把没跑起来的服务拉起来；改了模型配置会自动重启网关）。
+**日常使用**：重跑 `bash scripts/setup.sh` 即可（幂等，只会把没跑起来的服务拉起来）。
 **停止**：`pkill -f "dsh web"; pkill -f "openclaw gateway"`
 **日志**：`~/.dsh-plugin-wechat/logs/`
 
-## 常见问题
+## 常见问题（FAQ）
+
+**扫码报「网络错误，请稍后重试」？**
+大概率是你电脑上开了代理工具（Clash / Surge 等），把微信域名劫持走了。给微信域名加直连规则即可（Clash 系：**订阅 → 全局扩展配置（Merge）** 里加，然后保存重载）：
+
+```yaml
+prepend-rules:
+  - DOMAIN-SUFFIX,weixin.qq.com,DIRECT
+  - DOMAIN-SUFFIX,liteapp.weixin.qq.com,DIRECT
+```
+
+加完重跑 `bash scripts/setup.sh`。
 
 | 问题 | 处理 |
 |------|------|
-| 扫码报「网络错误，请稍后重试」 | 代理工具（Clash 等）把微信域名劫持了，按上面「快速开始」的提示加直连规则后重跑 setup.sh |
-| 微信收到「Something went wrong...」 | ① DSH 里模型没配好：打开 3080 网页确认能正常对话；② 刚改过 OpenClaw 配置：重跑 setup.sh（会自动重启网关） |
+| 微信收到「Something went wrong...」 | ① DSH 里模型没配好：打开 3080 网页确认能正常对话；② 刚改过配置：重跑 setup.sh（会自动重启网关） |
 | 微信不回消息 | 重跑 `bash scripts/setup.sh`；再 `openclaw channels status --probe` 看通道；掉线就重跑 setup.sh（会重新引导扫码） |
 | 桥端点没就绪（自检警告） | 看日志 `~/.dsh-plugin-wechat/logs/dsh-web.log`；确认 3080 网页能打开、模型已配置 |
 | 回复超时 | 模型请求慢或 API Key 未填。先在 http://127.0.0.1:3080 正常聊一句确认 |
 | 回复带 `#`、`*` 等符号 | 正常现象：AI 输出是 Markdown，微信按纯文本显示 |
+| 发图片/语音 | 目前只支持文字消息，其他类型会收到"暂不支持"提示 |
 
 ## 可选项（一般不用动）
 
@@ -61,13 +63,6 @@ bash scripts/setup.sh
 - **滥用风险（提示词注入）**：任何微信好友都能给你的机器人发消息，可能诱导 agent 执行危险操作或发送违规内容。保持 DSH 权限为 `workspace-write` 或更严（勿开 `danger-full-access`），桥默认只监听本机（勿改 `0.0.0.0`），共用机器时设置 `WECHAT_API_KEY`。
 - **行为规范**：只做被动回复，不群发、不营销、不骚扰，控制频率，内容合规。
 - **隐私**：发给机器人的消息会进入 DSH 会话记录与模型请求，平台也会做安全审核。
-
-## 开发者
-
-```bash
-pnpm install && pnpm build    # 构建到 dist/
-npm publish                   # 发布后用户可不用 clone，直接一条命令安装
-```
 
 ## 许可
 
