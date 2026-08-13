@@ -13,6 +13,7 @@
     "./package.json": "./package.json"
   },
   "bin": {
+    "dsh-plugin-wechat": "./scripts/setup.sh",
     "dsh-wechat-setup": "./scripts/setup.sh"
   },
   "files": [

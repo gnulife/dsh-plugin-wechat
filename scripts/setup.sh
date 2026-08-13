@@ -23,7 +23,18 @@
 set -euo pipefail
 
 # ---------------------------------------------------------------- 路径与常量
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# 解析 BASH_SOURCE 可能存在的符号链接（npm 全局/npx 安装时 bin 在 .bin/ 下是 symlink），
+# 得到脚本真实路径后，向上取包根目录。
+_SRC="${BASH_SOURCE[0]}"
+while [ -L "${_SRC}" ]; do
+  _DIR="$(cd -P "$(dirname "${_SRC}")" >/dev/null 2>&1 && pwd)"
+  _LINK="$(readlink "${_SRC}")"
+  case "${_LINK}" in
+    /*) _SRC="${_LINK}" ;;
+    *) _SRC="${_DIR}/${_LINK}" ;;
+  esac
+done
+SCRIPT_DIR="$(cd -P "$(dirname "${_SRC}")" && pwd)"
 REPO_DIR="${1:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 DSH_WEB_PORT="${DSH_WEB_PORT:-3080}"
 OC_PORT="${OPENCLAW_GATEWAY_PORT:-18789}"
