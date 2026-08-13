@@ -143,7 +143,7 @@ fi
 if [ -s "${WX_ACCOUNTS}" ]; then
   say "微信已登录过（${WX_ACCOUNTS}），跳过扫码"
 else
-  say "请用【微信小号】扫描终端里出现的二维码并确认（仅此一次）。"
+  say "请用微信扫描终端里出现的二维码并确认（仅此一次）。"
   openclaw channels login --channel openclaw-weixin
 fi
 
@@ -217,10 +217,10 @@ for i in $(seq 1 30); do
 done
 
 if [ -n "${KEY_READY:-}" ]; then
-  say "安装完成！用微信小号给机器人发一条消息，几秒内收到回复即成功"
+  say "安装完成！用微信给机器人发一条消息，几秒内收到回复即成功"
 else
   say "安装完成！还剩两步："
   say "  1) 打开 http://127.0.0.1:${DSH_WEB_PORT} 填 DeepSeek API Key"
-  say "  2) 用微信小号给机器人发一条消息，几秒内收到回复即成功"
+  say "  2) 用微信给机器人发一条消息，几秒内收到回复即成功"
 fi
 say "日常启动/自愈：重跑本脚本即可（幂等）。停止：pkill -f \"dsh web\"; pkill -f \"openclaw gateway\""

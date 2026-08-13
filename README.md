@@ -1,10 +1,10 @@
 # dsh-plugin-wechat
 
-把 DeepSeek Harness（DSH）变成你的**个人微信机器人**：微信小号扫码接入，每条消息由 DSH 的 AI（带工具和记忆）回复。
+把 DeepSeek Harness（DSH）变成你的**个人微信机器人**：微信扫码接入，每条消息由 DSH 的 AI（带工具和记忆）回复。
 
 ## 快速开始（一条命令 + 扫码）
 
-**准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信小号**（建议专用，不影响主号）。
+**准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信账号**。
 
 ```bash
 # 一条命令：自动安装 DSH、本插件、OpenClaw、微信通道，并启动全部
@@ -16,10 +16,10 @@ npx -y dsh-plugin-wechat
 
 脚本运行过程中只需你做两件事（都只有第一次需要）：
 
-1. **扫码**：终端里会出现二维码 → 用手机**微信小号**扫码确认。
+1. **扫码**：终端里会出现二维码 → 用手机微信扫码确认。
 2. **填 API Key**：脚本会提示你打开 **http://127.0.0.1:3080** → 「设置 → 模型」填入 DeepSeek API Key。
 
-完成后：直接用微信小号给机器人发消息，几秒内收到回复即成功。
+完成后：直接用微信给机器人发消息，几秒内收到回复即成功。
 
 **日常使用**：重跑 `bash scripts/setup.sh` 即可（幂等，只会把没跑起来的服务拉起来）。
 **停止**：`pkill -f "dsh web"; pkill -f "openclaw gateway"`
@@ -59,7 +59,7 @@ prepend-rules:
 
 ## 注意事项
 
-- 本方案使用**腾讯官方 ClawBot（iLink）通道**，官方支持、协议合规。遵守《微信ClawBot功能使用条款》即可；建议使用**微信小号**绑定，与新号先正常使用几天再启用。
+- 本方案使用**腾讯官方 ClawBot（iLink）通道**，官方支持、协议合规。遵守《微信ClawBot功能使用条款》即可。
 - 机器人收到消息会进入 DSH 会话与模型请求，注意内容；保持 DSH 权限为 `workspace-write`（勿开 `danger-full-access`），桥默认只监听本机。
 - 建议只做被动回复，不群发、不营销。
 

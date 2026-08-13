@@ -66,5 +66,5 @@ else
   nohup openclaw gateway >"${LOG_DIR}/openclaw-gateway.log" 2>&1 &
 fi
 
-say "完成。用微信小号给机器人发消息即可。"
+say "完成。用微信给机器人发消息即可。"
 say "状态检查：openclaw status；桥检查：curl -s http://127.0.0.1:${DSH_BRIDGE_PORT}/v1/models"
