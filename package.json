@@ -12,11 +12,15 @@
     },
     "./package.json": "./package.json"
   },
+  "bin": {
+    "dsh-wechat-setup": "./scripts/setup.sh"
+  },
   "files": [
     "dist",
     "cordis.patch.yml",
     "README.md",
-    "scripts"
+    "scripts",
+    "LICENSE"
   ],
   "scripts": {
     "build": "tsc",
@@ -28,6 +32,10 @@
     "bundle": {
       "patch": "./cordis.patch.yml"
     }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gnulife/dsh-plugin-wechat.git"
   },
   "peerDependencies": {
     "@deepseek-ai/cordis": "^4.0.1",

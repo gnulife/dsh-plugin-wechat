@@ -11,8 +11,10 @@
 #   7. 自检桥端点并给出完成提示
 #
 # 用法：
-#   bash scripts/setup.sh              # 从仓库运行（推荐）
+#   bash scripts/setup.sh              # 从仓库运行
 #   bash scripts/setup.sh /path/to/repo   # 插件源码不在当前目录时指定
+#   dsh-wechat-setup                   # npm 发布后：全局安装 dsh-plugin-wechat 直接运行
+#   npx -y dsh-wechat-setup            # 或临时运行，不安装
 #   OPENCLAW_GATEWAY_PORT=20000 bash scripts/setup.sh   # 自定义网关端口
 #
 # 之后日常使用：还是这一条命令（幂等，只会把没跑起来的拉起来）。
@@ -75,8 +77,8 @@ if grep -q 'dsh-plugin-wechat' "${PROFILE_DIR}/package.json" 2>/dev/null; then
   say "插件已装入 DSH web profile，跳过"
 else
   say "构建插件并装入 DSH（dsh plugin --profile web add ${REPO_DIR}）..."
-  # 源码比 dist 新（或 dist 缺失）时重新构建
-  if [ ! -f "${REPO_DIR}/dist/wechat.js" ] || find "${REPO_DIR}/src" -newer "${REPO_DIR}/dist/wechat.js" | grep -q .; then
+  # 源码比 dist 新（或 dist 缺失）时重新构建；npm 包内无 src 目录则跳过
+  if [ ! -f "${REPO_DIR}/dist/wechat.js" ] || { [ -d "${REPO_DIR}/src" ] && find "${REPO_DIR}/src" -newer "${REPO_DIR}/dist/wechat.js" | grep -q .; }; then
     (cd "${REPO_DIR}" && pnpm install --no-frozen-lockfile >/dev/null 2>&1 && pnpm build)
   fi
   dsh plugin --profile web add "${REPO_DIR}"
