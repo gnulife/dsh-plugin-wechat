@@ -9,7 +9,7 @@
  * - 回复通过 `agent.whenIdle()`（整个 agent 活动进入静止）后回扫会话日志里
  *   最新一条 `assistant/message` 事件取得。
  */
-import { createHash } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import type { Context } from '@deepseek-ai/cordis';
 import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent';
@@ -109,7 +109,10 @@ export class SessionManager {
 
   private async create(userKey: string): Promise<Managed> {
     const digest = createHash('sha256').update(userKey).digest('hex').slice(0, 16);
-    const sessionId = SessionId(`${this.options.sessionPrefix ?? 'wechat'}-${digest}`);
+    // 进程级随机后缀：避免 DSH 重启后复用同一个 sessionId，撞上已删除文件
+    // 却在持久化层残留的"空壳"会话对象（表现为 followup 后立刻 turn/end、无回复）。
+    const randomPart = randomUUID().slice(0, 8);
+    const sessionId = SessionId(`${this.options.sessionPrefix ?? 'wechat'}-${digest}-${randomPart}`);
 
     const agentOptions = this.options.resolveAgentOptions?.();
     const cwd = this.options.cwd;
