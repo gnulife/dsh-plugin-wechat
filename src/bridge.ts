@@ -123,8 +123,12 @@ export class Bridge {
     }
 
     const stream = body.stream === true;
-    const text = lastUserText(body.messages);
-    const userKey = typeof body.user === 'string' && body.user.trim() ? body.user : 'default';
+    const extracted = extractUserTextAndId(body.messages);
+    const userKey =
+      (typeof body.user === 'string' && body.user.trim()) ||
+      extracted.chatId ||
+      'default';
+    const text = extracted.text;
     if (!text) {
       // 图片/语音/文件等无文本消息：返回友好提示，而不是把错误抛回微信
       this.options.logger('received non-text message (image/voice/file), replying with a hint');
@@ -247,47 +251,73 @@ function readBody(req: IncomingMessage): Promise<string> {
   });
 }
 
-/** 取 messages 里最后一条带文本的 user 消息；兼容 string 与 blocks 数组两种 content。 */
-function lastUserText(messages: unknown): string | undefined {
-  if (!Array.isArray(messages)) return undefined;
+/**
+ * 取 messages 里最后一条带文本的 user 消息，并提取其中的微信 chat_id。
+ * 兼容 string 与 blocks 数组两种 content。
+ *
+ * 说明：OpenClaw 转发请求时通常不携带顶层 `user` 字段，而是把微信发送者身份
+ * 放在消息文本的「Conversation info (untrusted metadata)」JSON 里的 chat_id 中；
+ * 这里把它提取出来作为会话隔离键，避免所有微信好友挤进同一个 `default` 会话。
+ */
+function extractUserTextAndId(messages: unknown): { text?: string; chatId?: string } {
+  const result: { text?: string; chatId?: string } = {};
+  if (!Array.isArray(messages)) return result;
   for (let i = messages.length - 1; i >= 0; i--) {
     const message = messages[i] as { role?: unknown; content?: unknown } | undefined;
     if (!message || message.role !== 'user') continue;
-    const content = message.content;
-    if (typeof content === 'string') {
-      const text = content.trim();
-      if (text) return stripOpenclawWrapper(text);
-      continue;
-    }
-    if (Array.isArray(content)) {
-      const text = content
-        .map((block) => {
-          const b = block as { text?: unknown } | null;
-          return typeof b?.text === 'string' ? b.text : '';
-        })
-        .join('')
-        .trim();
-      if (text) return stripOpenclawWrapper(text);
-    }
+    const raw = textOfContent(message.content);
+    if (!raw) continue;
+    const parsed = parseOpenclawWrapper(raw);
+    // 只取第一个（最后一条）非空 user 文本
+    if (!result.text && parsed.text) result.text = parsed.text;
+    if (!result.chatId && parsed.chatId) result.chatId = parsed.chatId;
+    if (result.text && result.chatId) break;
   }
-  return undefined;
+  return result;
+}
+
+/** 从 string 或 blocks 数组提取纯文本。 */
+function textOfContent(content: unknown): string {
+  if (typeof content === 'string') return content.trim();
+  if (Array.isArray(content)) {
+    return content
+      .map((block) => {
+        const b = block as { text?: unknown } | null;
+        return typeof b?.text === 'string' ? b.text : '';
+      })
+      .join('')
+      .trim();
+  }
+  return '';
 }
 
 /**
- * 剥离 OpenClaw 注入的会话元数据包装，只保留真实用户消息。
+ * 拆解 OpenClaw 注入的会话元数据包装，返回真实消息文本与微信 chat_id。
  *
  * OpenClaw 转发微信消息时会包装成：
- *   "[时间] Conversation info (untrusted metadata):\n```json\n{...}\n```\n\n<真实消息>"
- * 若不剥离，DSH agent 会把这段元数据也当用户输入，导致回复串味、变慢。
+ *   "[时间] Conversation info (untrusted metadata):\n```json\n{..., "chat_id": "xxx@im.wechat"}\n```\n\n<真实消息>"
+ * 若不剥离，DSH agent 会把元数据当用户输入，导致回复串味、变慢；
+ * 而 chat_id 正是微信发送者的稳定身份，用于按人隔离会话。
  */
-function stripOpenclawWrapper(text: string): string {
+function parseOpenclawWrapper(text: string): { text: string; chatId?: string } {
   const marker = 'Conversation info (untrusted metadata):';
   const idx = text.indexOf(marker);
-  if (idx === -1) return text.trim();
+  if (idx === -1) return { text: text.trim() };
+
   const after = text.slice(idx + marker.length);
   const fence = after.indexOf('```');
-  if (fence === -1) return text.trim();
+  if (fence === -1) return { text: text.trim() };
   const closeFence = after.indexOf('```', fence + 3);
-  if (closeFence === -1) return text.trim();
-  return after.slice(closeFence + 3).trim();
+  const jsonStr = fence !== -1 && closeFence !== -1 ? after.slice(fence + 3, closeFence) : '';
+  let chatId: string | undefined;
+  if (jsonStr) {
+    try {
+      const meta = JSON.parse(jsonStr) as { chat_id?: unknown };
+      if (typeof meta.chat_id === 'string' && meta.chat_id) chatId = meta.chat_id;
+    } catch {
+      // 元数据解析失败则忽略，仍剥离包装
+    }
+  }
+  const realText = closeFence !== -1 ? after.slice(closeFence + 3).trim() : text.trim();
+  return { text: realText, chatId };
 }
