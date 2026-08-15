@@ -42,9 +42,9 @@ prepend-rules:
 
 | 问题 | 处理 |
 |------|------|
-| 微信收到「Something went wrong...」 | ① DSH 里模型没配好：打开 3080 网页确认能正常对话；② 刚改过配置：重跑 setup.sh（会自动重启网关） |
-| 微信不回消息 | 重跑 `bash scripts/setup.sh`；再 `openclaw channels status --probe` 看通道；掉线就重跑 setup.sh（会重新引导扫码） |
-| 桥端点没就绪（自检警告） | 看日志 `~/.dsh-plugin-wechat/logs/dsh-web.log`；确认 3080 网页能打开、模型已配置 |
+| 微信收到「Something went wrong...」 | ① DSH 里模型没配好：打开 3080 网页确认能正常对话；② 重跑 setup.sh |
+| 微信不回消息 | 重跑 `bash scripts/setup.sh`；确认微信已登录（`ls ~/.dsh/wechat/accounts.json` 存在）；否则运行 `node scripts/login.js` 重新扫码 |
+| 需要换账号/重新登录 | `rm -rf ~/.dsh/wechat/accounts.json && node scripts/login.js`（或 `dsh-wechat-login`） |
 | 回复超时 | 模型请求慢或 API Key 未填。先在 http://127.0.0.1:3080 正常聊一句确认 |
 | 回复带 `#`、`*` 等符号 | 正常现象：AI 输出是 Markdown，微信按纯文本显示 |
 | 发图片/语音 | 目前只支持文字消息，其他类型会收到"暂不支持"提示 |
@@ -53,11 +53,11 @@ prepend-rules:
 
 | 环境变量 | 默认值 | 说明 |
 |----------|--------|------|
-| `WECHAT_API_KEY` | 空 | 桥的共享密钥；与他人共用机器时设置 |
 | `WECHAT_SESSION_MODE` | `per-user` | `single`=所有微信好友共用一个会话 |
 | `WECHAT_WORKSPACE` | dsh 启动目录 | 微信会话的工作目录（agent 的工具操作范围） |
-| `DSH_BRIDGE_PORT` | `8787` | 桥端口；改动后重跑 setup.sh（OpenClaw 侧自动同步） |
-| `DSH_WEB_PORT` / `OPENCLAW_GATEWAY_PORT` | `3080` / `18789` | 启动端口 |
+| `WECHAT_FORCE_LOGIN` | false | `true`=启动时强制重新扫码登录 |
+| `WECHAT_MODE` | `native` | `bridge`=启用 OpenAI 兼容桥（兼容旧客户端） |
+| `DSH_WEB_PORT` | `3080` | DSH web 端口 |
 
 ## 注意事项
 

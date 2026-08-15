@@ -14,7 +14,8 @@
   },
   "bin": {
     "dsh-plugin-wechat": "./scripts/setup.sh",
-    "dsh-wechat-setup": "./scripts/setup.sh"
+    "dsh-wechat-setup": "./scripts/setup.sh",
+    "dsh-wechat-login": "./scripts/login.js"
   },
   "files": [
     "dist",
