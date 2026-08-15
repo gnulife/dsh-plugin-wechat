@@ -101,12 +101,13 @@ export class WechatChannel {
     }
 
     this.ctx.logger('wechat').info('开始微信扫码登录（请用微信扫描终端二维码）...');
-    const start = await startWeixinLoginWithQr({ botType: DEFAULT_ILINK_BOT_TYPE });
+    const apiBaseUrl = DEFAULT_BASE_URL;
+    const start = await startWeixinLoginWithQr({ botType: DEFAULT_ILINK_BOT_TYPE, apiBaseUrl });
     if (start.qrcodeUrl) await displayQRCode(start.qrcodeUrl);
 
     const sessionKey = start.sessionKey;
     // 轮询等待扫码确认
-    const wait = await waitForWeixinLogin({ sessionKey, timeoutMs: 300_000 });
+    const wait = await waitForWeixinLogin({ sessionKey, timeoutMs: 300_000, apiBaseUrl, botType: String(DEFAULT_ILINK_BOT_TYPE) });
 
     if (!wait.connected) {
       throw new Error('微信扫码登录超时或未确认');

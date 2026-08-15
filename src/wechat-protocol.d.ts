@@ -11,6 +11,7 @@ declare module '@tencent-weixin/openclaw-weixin/dist/src/auth/login-qr.js' {
     botType?: number;
     accountId?: string;
     force?: boolean;
+    apiBaseUrl: string;
   }): Promise<{
     qrcodeUrl?: string;
     message: string;
@@ -19,6 +20,9 @@ declare module '@tencent-weixin/openclaw-weixin/dist/src/auth/login-qr.js' {
   export function waitForWeixinLogin(opts: {
     sessionKey: string;
     timeoutMs?: number;
+    apiBaseUrl: string;
+    botType?: string;
+    verbose?: boolean;
   }): Promise<{
     connected: boolean;
     alreadyConnected?: boolean;
