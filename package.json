@@ -28,7 +28,8 @@
     "build": "tsc",
     "prepare": "tsc",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "service": "bash scripts/service.sh"
   },
   "dsh": {
     "bundle": {
