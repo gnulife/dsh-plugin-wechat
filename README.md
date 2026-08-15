@@ -49,6 +49,21 @@ prepend-rules:
 | 回复带 `#`、`*` 等符号 | 正常现象：AI 输出是 Markdown，微信按纯文本显示 |
 | 发图片/语音 | 目前只支持文字消息，其他类型会收到"暂不支持"提示 |
 
+**（macOS）不想每次手动启动 DSH，想开机自启？**
+用 launchd 把 DSH web（含微信通道）注册为开机自启 + 崩溃自动重启的后台服务：
+
+```bash
+bash scripts/service.sh install    # 安装并启动开机自启服务
+bash scripts/service.sh status     # 查看状态
+bash scripts/service.sh stop       # 停止
+bash scripts/service.sh start      # 重新启动
+bash scripts/service.sh uninstall  # 卸载，恢复手动前台运行
+```
+
+> 说明：首次登录仍需在终端扫码一次（`node scripts/login.js`）。登录凭证持久化到
+> `~/.dsh/wechat/accounts.json` 后，后续开机自启即可直接后台收消息，无需再扫码。
+> 日志在 `~/.dsh-plugin-wechat/logs/dsh-web.log`。
+
 ## 可选项（一般不用动）
 
 | 环境变量 | 默认值 | 说明 |
