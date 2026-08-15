@@ -7,7 +7,7 @@
 **准备**：一台电脑（macOS / Linux；Windows 请用 Git Bash 或 WSL）、Node.js ≥ 22、一个**微信账号**。
 
 ```bash
-# 一条命令：自动安装 DSH、本插件、OpenClaw、微信通道，并启动全部
+# 一条命令：自动安装 DSH、本插件，并启动微信通道（DSH 单进程，无需 OpenClaw）
 npx -y dsh-plugin-wechat
 ```
 
@@ -21,9 +21,11 @@ npx -y dsh-plugin-wechat
 
 完成后：直接用微信给机器人发消息，几秒内收到回复即成功。
 
-**日常使用**：重跑 `bash scripts/setup.sh` 即可（幂等，只会把没跑起来的服务拉起来）。
-**停止**：`pkill -f "dsh web"; pkill -f "openclaw gateway"`
+**日常使用**：重跑 `bash scripts/setup.sh` 即可（幂等）。
+**停止**：`pkill -f "dsh web"`
 **日志**：`~/.dsh-plugin-wechat/logs/`
+
+> 架构：本插件内置微信官方协议（MIT 许可的协议核心），在 DSH 单进程内完成扫码登录、长轮询收消息、agent 回复、发送。无需单独的 OpenClaw 网关。
 
 ## 常见问题（FAQ）
 
