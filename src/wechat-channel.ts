@@ -23,9 +23,9 @@ import {
   displayQRCode,
   startWeixinLoginWithQr,
   waitForWeixinLogin,
-} from '@tencent-weixin/openclaw-weixin/dist/src/auth/login-qr.js';
-import { getUpdates, sendMessage } from '@tencent-weixin/openclaw-weixin/dist/src/api/api.js';
-import { MessageItemType, MessageState, MessageType, type WeixinMessage } from '@tencent-weixin/openclaw-weixin/dist/src/api/types.js';
+} from './wechat/protocol/auth/login-qr.js';
+import { getUpdates, sendMessage } from './wechat/protocol/api/api.js';
+import { MessageItemType, MessageState, MessageType, type WeixinMessage } from './wechat/protocol/api/types.js';
 import { createUserMessage } from '@deepseek-ai/dsh-llm';
 import { SessionId } from '@deepseek-ai/dsh-session';
 

@@ -15,7 +15,7 @@ import {
   DEFAULT_ILINK_BOT_TYPE,
   startWeixinLoginWithQr,
   waitForWeixinLogin,
-} from '@tencent-weixin/openclaw-weixin/dist/src/auth/login-qr.js';
+} from '../dist/wechat/protocol/auth/login-qr.js';
 
 const API_BASE_URL = 'https://ilinkai.weixin.qq.com';
 const stateDir = join(homedir(), '.dsh', 'wechat');
