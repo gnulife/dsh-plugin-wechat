@@ -13,6 +13,8 @@ import { createHash, randomUUID } from 'node:crypto';
 
 import type { Context } from '@deepseek-ai/cordis';
 import type { Agent, AgentHandle } from '@deepseek-ai/dsh-agent';
+// 引入 @deepseek-ai/dsh-tools 类型增强，使 ctx.tools / agentCtx.tools 可用
+import type {} from '@deepseek-ai/dsh-tools';
 import { createUserMessage, type ContentBlock } from '@deepseek-ai/dsh-llm';
 import { SessionId } from '@deepseek-ai/dsh-session';
 
@@ -24,8 +26,12 @@ export interface SessionManagerOptions {
   /** 单轮回复超时（毫秒），默认 180000。 */
   readonly idleTimeoutMs?: number;
   /**
+   * 是否允许微信 agent 使用 web_search 工具（联网搜索）。
+   * 默认 true：仅开放 web_search，用 restrict 移除其他所有工具（bash/文件等）。
+   */
+  readonly enableSearch?: boolean;
+  /**
    * 创建 agent 时解析 provider/model（如 DSH 设置的默认模型）。
-   * 返回 undefined 时 agent 将因缺少模型而无法运行，插件会收到明确报错。
    */
   readonly resolveAgentOptions?: () => { provider: string; model: string } | undefined;
 }
@@ -121,21 +127,43 @@ export class SessionManager {
       agentOptions,
       ...(cwd ? { meta: { cwd } } : {}),
       setup: (agentCtx) => {
-        // 微信机器人模式：禁止调用工具，只输出文本回复。
-        // 否则模型会输出 `<tool_calls>` 文本（工具不会真正执行），把命令/工具残留发到微信。
-        agentCtx.systemPrompt.section({
-          name: 'wechat-bot-mode',
-          order: -50,
-          text:
-            '你是运行在 DeepSeek Harness 中的个人微信聊天机器人（不是编程助手）。' +
-            '必须遵守：1) 只输出纯文本回复，直接、简洁、友好，用中文；' +
-            '2) 严禁调用任何工具（bash/exec_command、文件读写、网页搜索等都被禁止），' +
-            '严禁输出 ``<tool_calls>``、``<invoke>`` 这类标记，也不要写命令代码；' +
-            '3) 当对方要求你"执行某个操作/命令/查文件/联网搜索"时，' +
-            '直接说明"我只是聊天机器人，做不了这类操作"，再基于已有知识回答能回答的部分；' +
-            '4) 不要空说"我来执行""我来查"然后停下——要么直接给答案，要么说明做不到；' +
-            '5) 不确定的事情如实说明，不要编造。',
-        });
+        // 微信机器人模式：只输出文本回复，不调用危险工具（bash/文件）。
+        // 若 enableSearch，则仅开放 web_search 联网搜索（用 restrict 移除其他所有工具）。
+        const searchEnabled = this.options.enableSearch ?? true;
+        if (searchEnabled) {
+          try {
+            agentCtx.tools.restrict({ allow: ['web_search'] });
+          } catch {
+            // restrict 失败则回退：tools 可能不在 agentCtx 上，忽略
+          }
+          agentCtx.systemPrompt.section({
+            name: 'wechat-bot-mode',
+            order: -50,
+            text:
+              '你是运行在 DeepSeek Harness 中的个人微信聊天机器人（不是编程助手）。' +
+              '必须遵守：1) 只输出纯文本回复，直接、简洁、友好，用中文；' +
+              '2) 你只能调用 `web_search` 这一个工具（用于联网搜索实时/不确定的信息），' +
+              '严禁调用 bash/exec_command 等其他任何工具，严禁输出 ``<tool_calls>``、``<invoke>`` 标记或命令代码；' +
+              '3) 当对方询问实时新闻、最新动态、你不确定的事实等需要联网的信息时，' +
+              '先调用 web_search 获取结果，再从结果里提炼简洁的中文回答；不要编造不存在的链接或事实；' +
+              '4) 严禁输出 ``<tool_calls>``、``<invoke>`` 这类标记，也不要写命令代码；' +
+              '5) 不确定的事情如实说明，不要编造。',
+          });
+        } else {
+          agentCtx.systemPrompt.section({
+            name: 'wechat-bot-mode',
+            order: -50,
+            text:
+              '你是运行在 DeepSeek Harness 中的个人微信聊天机器人（不是编程助手）。' +
+              '必须遵守：1) 只输出纯文本回复，直接、简洁、友好，用中文；' +
+              '2) 严禁调用任何工具（bash/exec_command、文件读写、网页搜索等都被禁止），' +
+              '严禁输出 ``<tool_calls>``、``<invoke>`` 这类标记，也不要写命令代码；' +
+              '3) 当对方要求你"执行某个操作/命令/查文件/联网搜索"时，' +
+              '直接说明"我只是聊天机器人，做不了这类操作"，再基于已有知识回答能回答的部分；' +
+              '4) 不要空说"我来执行""我来查"然后停下——要么直接给答案，要么说明做不到；' +
+              '5) 不确定的事情如实说明，不要编造。',
+          });
+        }
       },
     });
     return { handle, chain: Promise.resolve() };

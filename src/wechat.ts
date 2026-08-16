@@ -45,6 +45,8 @@ export interface WechatConfig {
   workspace?: string;
   /** native 模式：强制重新扫码登录。 */
   forceLogin?: boolean;
+  /** 是否允许联网搜索(web_search 工具)。默认 true。 */
+  enableSearch?: boolean;
 }
 
 const DEFAULTS = {
@@ -71,6 +73,7 @@ export async function apply(
     sessionPrefix: 'wechat',
     cwd: config.workspace,
     idleTimeoutMs: config.idleTimeoutMs,
+    enableSearch: config.enableSearch,
     resolveAgentOptions: () => {
       const selection = ctx.agentDefaultModel?.currentSelection();
       return {
@@ -153,6 +156,8 @@ interface ResolvedConfig {
   bridgeModelId: string;
   workspace: string;
   forceLogin: boolean;
+  /** 是否开放 web_search。默认 true。 */
+  enableSearch: boolean;
 }
 
 function normalizeConfig(raw: WechatConfig): ResolvedConfig {
@@ -172,6 +177,7 @@ function normalizeConfig(raw: WechatConfig): ResolvedConfig {
     bridgeModelId: env.WECHAT_BRIDGE_MODEL_ID ?? raw.bridgeModelId ?? DEFAULTS.bridgeModelId,
     workspace: env.WECHAT_WORKSPACE ?? raw.workspace ?? process.cwd(),
     forceLogin: env.WECHAT_FORCE_LOGIN === 'true' || raw.forceLogin || DEFAULTS.forceLogin,
+    enableSearch: env.WECHAT_ENABLE_SEARCH !== 'false' && raw.enableSearch !== false,
   };
 }
 
