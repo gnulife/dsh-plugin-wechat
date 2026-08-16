@@ -45,18 +45,25 @@ interface Managed {
 export class SessionManager {
   private readonly sessions = new Map<string, Managed>();
   private readonly creating = new Map<string, Promise<Managed>>();
+  /** 当 agent 开始调工具（如 web_search）时回调，用于先回一条"正在处理"提示。 */
+  private onToolStartCb: ((userKey: string, toolName: string) => void) | undefined;
 
   constructor(
     private readonly ctx: Context,
     private readonly options: SessionManagerOptions = {},
   ) {}
 
+  /** 绑定"工具开始"回调（native 通道就绪后，用它给对应用户发即时提示）。 */
+  setOnToolStart(cb: (userKey: string, toolName: string) => void): void {
+    this.onToolStartCb = cb;
+  }
+
   /**
    * 把一个 userKey 的文本送进对应的 DSH agent 会话，等待并返回回复文本。
    */
   async send(userKey: string, text: string): Promise<string> {
     const managed = await this.ensure(userKey);
-    const task = managed.chain.then(() => this.runTurn(managed, text));
+    const task = managed.chain.then(() => this.runTurn(managed, userKey, text));
     // 链上只保留"完成与否"，绝不让前序失败阻塞后续请求
     managed.chain = task.then(
       () => undefined,
@@ -73,27 +80,45 @@ export class SessionManager {
     await Promise.allSettled(entries.map((m) => m.handle.dispose()));
   }
 
-  private async runTurn(managed: Managed, text: string): Promise<string> {
+  private async runTurn(managed: Managed, userKey: string, text: string): Promise<string> {
     const agent = managed.handle.agent;
-    agent.followup(
-      createUserMessage({
-        content: [{ type: 'text', text }],
-        source: { kind: 'plugin', plugin: 'wechat' },
-      }),
-    );
+    const onToolStart = this.onToolStartCb;
 
-    const timeoutMs = this.options.idleTimeoutMs ?? 180_000;
-    await withTimeout(
-      agent.whenIdle(),
-      timeoutMs,
-      `DSH agent 未在 ${timeoutMs}ms 内完成回复（可能是模型请求超时或会话卡住）`,
-    );
+    // 监听会话事件：当 agent 调用工具（如 web_search）时，先给微信发一条"正在处理"提示，
+    // 避免工具耗时期间用户干等。
+    const offToolListener = onToolStart
+      ? this.ctx.on('session/event', (session, event) => {
+          if (session !== agent.session) return;
+          const data = event?.data as { name?: string } | undefined;
+          if (event?.type === 'tool/call' && data?.name) {
+            onToolStart(userKey, data.name);
+          }
+        })
+      : undefined;
 
-    const reply = lastAssistantText(agent);
-    if (!reply) {
-      throw new Error('DSH agent 没有产生回复文本');
+    try {
+      agent.followup(
+        createUserMessage({
+          content: [{ type: 'text', text }],
+          source: { kind: 'plugin', plugin: 'wechat' },
+        }),
+      );
+
+      const timeoutMs = this.options.idleTimeoutMs ?? 180_000;
+      await withTimeout(
+        agent.whenIdle(),
+        timeoutMs,
+        `DSH agent 未在 ${timeoutMs}ms 内完成回复（可能是模型请求超时或会话卡住）`,
+      );
+
+      const reply = lastAssistantText(agent);
+      if (!reply) {
+        throw new Error('DSH agent 没有产生回复文本');
+      }
+      return reply;
+    } finally {
+      offToolListener?.();
     }
-    return reply;
   }
 
   /** 取（或建）一个 userKey 对应的会话，创建过程对并发安全。 */

@@ -236,6 +236,20 @@ export class WechatChannel {
       },
     });
   }
+
+  /**
+   * 给指定微信用户发一条即时提示（不经 agent），用于工具（如 web_search）执行期间的
+   * "正在处理..." 反馈，避免用户等待时无感。
+   */
+  async sendPrompt(to: string, text: string): Promise<void> {
+    const acct = this.activeAccountId ? this.accounts.get(this.activeAccountId) : undefined;
+    if (!acct) return;
+    try {
+      await this.reply(acct, to, text);
+    } catch (err) {
+      this.ctx.logger('wechat').warn('send prompt failed:', (err as Error).message);
+    }
+  }
 }
 
 /** 从 item_list 提取纯文本（去掉 markdown 残留）。 */

@@ -92,6 +92,11 @@ export async function apply(
     forceLogin: config.forceLogin,
     cwd: config.workspace,
   });
+  // agent 调用工具（如 web_search）时，先给该微信用户发"正在处理"即时提示，避免干等。
+  sessions.setOnToolStart((userKey, toolName) => {
+    const label = toolName === 'web_search' ? '正在联网搜索' : '正在处理';
+    void channel.sendPrompt(userKey, `${label}，请稍候...`);
+  });
   try {
     await channel.login(config.forceLogin);
     await channel.start();
