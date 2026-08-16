@@ -133,8 +133,10 @@ export class SessionManager {
         if (searchEnabled) {
           try {
             agentCtx.tools.restrict({ allow: ['web_search'] });
-          } catch {
-            // restrict 失败则回退：tools 可能不在 agentCtx 上，忽略
+            console.error('[wechat] restrict({allow:[web_search]}) OK');
+          } catch (err) {
+            // 打印错误以便诊断（tools 可能未就绪或 web_search 未注册）
+            console.error('[wechat] restrict failed:', err instanceof Error ? err.message : String(err));
           }
           agentCtx.systemPrompt.section({
             name: 'wechat-bot-mode',
