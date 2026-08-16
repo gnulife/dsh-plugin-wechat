@@ -126,16 +126,27 @@ export class SessionManager {
       sessionId,
       agentOptions,
       ...(cwd ? { meta: { cwd } } : {}),
-      setup: (agentCtx) => {
-        // 微信机器人模式：只输出文本回复，不调用危险工具（bash/文件）。
-        // 若 enableSearch，则仅开放 web_search 联网搜索（用 restrict 移除其他所有工具）。
+      setup: async (agentCtx) => {
+        // 微信机器人 mode：默认 join standard preset（否则 agent 的 scope 看不到任何工具，
+        // 因为 web_search 等工具注册在 preset 的 scoped layer 而非全局层）。
+        // 与 DSH GUI 主会话（composeAgent 里 presets.mount）一致。
+        const presets = agentCtx.get('agentPresets') as
+          | { mount(ctx: Context, id?: string): Promise<unknown> }
+          | undefined;
+        if (presets) {
+          try {
+            await presets.mount(agentCtx, undefined); // join 默认 preset(standard)
+          } catch (err) {
+            console.error('[wechat] preset mount failed:', err instanceof Error ? err.message : String(err));
+          }
+        }
+
         const searchEnabled = this.options.enableSearch ?? true;
         if (searchEnabled) {
+          // 仅开放 web_search：用 restrict 裁掉 preset 提供的 bash/fs 等其他工具
           try {
             agentCtx.tools.restrict({ allow: ['web_search'] });
-            console.error('[wechat] restrict({allow:[web_search]}) OK');
           } catch (err) {
-            // 打印错误以便诊断（tools 可能未就绪或 web_search 未注册）
             console.error('[wechat] restrict failed:', err instanceof Error ? err.message : String(err));
           }
           agentCtx.systemPrompt.section({
@@ -152,6 +163,14 @@ export class SessionManager {
               '5) 不确定的事情如实说明，不要编造。',
           });
         } else {
+          // 关闭搜索：需在 join preset 之后显式 deny web_search（仅靠文案不可靠）
+          if (presets) {
+            try {
+              agentCtx.tools.restrict({ allow: [] });
+            } catch (err) {
+              console.error('[wechat] restrict(deny-all) failed:', err instanceof Error ? err.message : String(err));
+            }
+          }
           agentCtx.systemPrompt.section({
             name: 'wechat-bot-mode',
             order: -50,
