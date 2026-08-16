@@ -26,6 +26,8 @@ npx -y dsh-plugin-wechat
 **日志**：`~/.dsh-plugin-wechat/logs/`
 
 > 架构：本插件内置微信官方协议（MIT 许可的协议核心），在 DSH 单进程内完成扫码登录、长轮询收消息、agent 回复、发送。无需单独的 OpenClaw 网关。
+>
+> 搜索：机器人支持**联网搜索**（复用 DeepSeek API Key，零额外配置）。问它"最新的新闻""某个实时信息"，它会用 `web_search` 工具查询后回答。可用 `WECHAT_ENABLE_SEARCH=false` 关闭。
 
 ## 常见问题（FAQ）
 
@@ -72,6 +74,7 @@ bash scripts/service.sh uninstall  # 卸载，恢复手动前台运行
 | `WECHAT_WORKSPACE` | dsh 启动目录 | 微信会话的工作目录（agent 的工具操作范围） |
 | `WECHAT_FORCE_LOGIN` | false | `true`=启动时强制重新扫码登录 |
 | `WECHAT_MODE` | `native` | `bridge`=启用 OpenAI 兼容桥（兼容旧客户端） |
+| `WECHAT_ENABLE_SEARCH` | true | 允许微信机器人联网搜索（`false`=关闭，只聊天） |
 | `DSH_WEB_PORT` | `3080` | DSH web 端口 |
 
 ## 注意事项
