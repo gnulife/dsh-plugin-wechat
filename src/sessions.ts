@@ -84,6 +84,9 @@ export class SessionManager {
     const agent = managed.handle.agent;
     const onToolStart = this.onToolStartCb;
 
+    // 同一 turn 内对同一工具只提示一次（避免模型对同一查询重复搜索/重复调用导致提示刷屏）。
+    const notifiedTools = new Set<string>();
+
     // 监听会话事件：当 agent 调用工具（如 web_search）时，先给微信发一条"正在处理"提示，
     // 避免工具耗时期间用户干等。
     const offToolListener = onToolStart
@@ -91,7 +94,11 @@ export class SessionManager {
           if (session !== agent.session) return;
           const data = event?.data as { name?: string } | undefined;
           if (event?.type === 'tool/call' && data?.name) {
-            onToolStart(userKey, data.name);
+            const name = data.name;
+            if (!notifiedTools.has(name)) {
+              notifiedTools.add(name);
+              onToolStart(userKey, name);
+            }
           }
         })
       : undefined;
@@ -183,7 +190,8 @@ export class SessionManager {
               '2) 你只能调用 `web_search` 这一个工具（用于联网搜索实时/不确定的信息），' +
               '严禁调用 bash/exec_command 等其他任何工具，严禁输出 ``<tool_calls>``、``<invoke>`` 标记或命令代码；' +
               '3) 当对方询问实时新闻、最新动态、你不确定的事实等需要联网的信息时，' +
-              '先调用 web_search 获取结果，再从结果里提炼简洁的中文回答；不要编造不存在的链接或事实；' +
+              '先调用 `web_search` 获取结果，再从结果里提炼简洁的中文回答；不要编造不存在的链接或事实；' +
+              '做多做一次搜索即可，不要对同一问题重复/换语言反复搜索；' +
               '4) 严禁输出 ``<tool_calls>``、``<invoke>`` 这类标记，也不要写命令代码；' +
               '5) 不确定的事情如实说明，不要编造。',
           });
