@@ -51,20 +51,48 @@ prepend-rules:
 | 回复带 `#`、`*` 等符号 | 正常现象：AI 输出是 Markdown，微信按纯文本显示 |
 | 发图片/语音 | 目前只支持文字消息，其他类型会收到"暂不支持"提示 |
 
-**（macOS）不想每次手动启动 DSH，想开机自启？**
-用 launchd 把 DSH web（含微信通道）注册为开机自启 + 崩溃自动重启的后台服务：
+**（macOS）DSH 开机自启（不用每次手动启动）**
+
+用 macOS 的 launchd 把 DSH web（含微信通道）注册为开机自启 + 崩溃自动重启的后台服务。
+
+**一次性配置（三步）：**
 
 ```bash
-bash scripts/service.sh install    # 安装并启动开机自启服务
-bash scripts/service.sh status     # 查看状态
-bash scripts/service.sh stop       # 停止
-bash scripts/service.sh start      # 重新启动
-bash scripts/service.sh uninstall  # 卸载，恢复手动前台运行
+# 1. 确保已登录过微信（凭证会持久化），只需一次：
+node scripts/login.js          # 扫码登录，或确认 ~/.dsh/wechat/accounts.json 已存在
+
+# 2. 安装并启动自启服务：
+bash scripts/service.sh install
+
+# 3. 验证：
+bash scripts/service.sh status # 应显示服务已加载、运行中
 ```
 
-> 说明：首次登录仍需在终端扫码一次（`node scripts/login.js`）。登录凭证持久化到
-> `~/.dsh/wechat/accounts.json` 后，后续开机自启即可直接后台收消息，无需再扫码。
-> 日志在 `~/.dsh-plugin-wechat/logs/dsh-web.log`。
+配置完成后，**每次开机 DSH 自动启动，微信机器人自动在线**，无需任何手动操作。
+
+**日常管理：**
+
+```bash
+bash scripts/service.sh status     # 查看是否在运行
+bash scripts/service.sh restart    # 重启（改完配置后）
+bash scripts/service.sh stop       # 暂停机器人
+# 注意 service.sh 提供的是 start / stop / status / uninstall，restart 用 start（会自动重启）
+bash scripts/service.sh start      # 重新启动
+bash scripts/service.sh uninstall  # 卸载自启，恢复手动前台运行
+```
+
+**查看日志：**
+
+```bash
+tail -f ~/.dsh-plugin-wechat/logs/dsh-web.log      # DSH 运行日志
+tail -f ~/.dsh-plugin-wechat/logs/dsh-web.err.log   # 错误日志
+```
+
+**说明：**
+- 首次登录仍需终端扫码一次（`node scripts/login.js`）。登录凭证持久化到
+  `~/.dsh/wechat/accounts.json` 后，开机自启即可直接后台收消息，无需再扫码。
+- launchd 的 `KeepAlive` 保证 DSH 意外退出会自动重启。
+- 若要换端口等其他配置，用环境变量（见下节），改完跑 `service.sh start` 生效。
 
 ## 可选项（一般不用动）
 
