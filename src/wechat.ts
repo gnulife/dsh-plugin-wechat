@@ -10,6 +10,7 @@
  */
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-agent-default-model';
+import z from '@deepseek-ai/schemastery';
 
 import { Bridge } from './bridge.js';
 import { SessionManager } from './sessions.js';
@@ -18,6 +19,26 @@ import { WechatChannel } from './wechat-channel.js';
 export const name = 'wechat';
 // 依赖 DSH 的 agent 注册表与默认模型选择服务；就绪前插件保持未激活。
 export const inject = ['agents', 'agentDefaultModel'];
+
+/**
+ * 插件配置 schema：DSH 插件配置界面据此生成表单（可在 UI 里配置工作目录等）。
+ * 字段与 WechatConfig 对齐，均可选。
+ */
+export const Config = z.object({
+  host: z.string(),
+  port: z.number(),
+  apiKey: z.string(),
+  mode: z.union([z.const('native'), z.const('bridge')]),
+  sessionMode: z.union([z.const('per-user'), z.const('single')]),
+  provider: z.string(),
+  model: z.string(),
+  idleTimeoutMs: z.number(),
+  bridgeModelId: z.string(),
+  /** 微信 agent 的工作目录（默认 DSH 启动目录）。 */
+  workspace: z.string(),
+  forceLogin: z.boolean(),
+  enableSearch: z.boolean(),
+});
 
 export interface WechatConfig {
   /** mode=bridge 时监听地址，默认 127.0.0.1。 */

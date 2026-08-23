@@ -94,12 +94,27 @@ tail -f ~/.dsh-plugin-wechat/logs/dsh-web.err.log   # 错误日志
 - launchd 的 `KeepAlive` 保证 DSH 意外退出会自动重启。
 - 若要换端口等其他配置，用环境变量（见下节），改完跑 `service.sh start` 生效。
 
-## 可选项（一般不用动）
+## 配置
+
+### 工作目录（如何让机器人在指定目录下工作）
+
+微信 agent 默认在 **DSH 启动目录**下工作。想让它在你自己的项目目录下创建文件/子项目，用 **`WECHAT_WORKSPACE`** 环境变量指定：
+
+```bash
+WECHAT_WORKSPACE=/Users/you/my-projects bash scripts/service.sh start
+```
+
+或在 **DSH 插件配置界面**（设置 → 插件 → dsh-plugin-wechat）填写 `workspace` 字段。
+配置 `workspace` 后，微信里让它"帮我创建 xxx 项目"，它就会在工作目录下创建。
+
+> 说明：工作目录就是微信 agent 能读写的根目录（即它的 `cwd`）。改后需重启 DSH 生效（`service.sh start`）。
+
+### 其他配置
 
 | 环境变量 | 默认值 | 说明 |
 |----------|--------|------|
+| `WECHAT_WORKSPACE` | dsh 启动目录 | 微信 agent 的工作目录（可在插件配置界面填 `workspace`） |
 | `WECHAT_SESSION_MODE` | `per-user` | `single`=所有微信好友共用一个会话 |
-| `WECHAT_WORKSPACE` | dsh 启动目录 | 微信会话的工作目录（agent 的工具操作范围） |
 | `WECHAT_FORCE_LOGIN` | false | `true`=启动时强制重新扫码登录 |
 | `WECHAT_MODE` | `native` | `bridge`=启用 OpenAI 兼容桥（兼容旧客户端） |
 | `WECHAT_ENABLE_SEARCH` | true | 允许微信机器人联网搜索（`false`=关闭，只聊天） |
