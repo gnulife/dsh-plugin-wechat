@@ -31,6 +31,13 @@ export interface SessionManagerOptions {
    */
   readonly enableSearch?: boolean;
   /**
+   * 是否允许微信 agent 在工作目录内使用 bash/write 工具（创建子项目/写文件）。
+   * 默认 false（保持安全：仅 web_search）。开启后 agent 可在 cwd 内创建项目。
+   * 注意：本插件只开放工具、不设置 sandbox；实际写入范围由 DSH 当前权限决定，
+   * 建议配合 workspace-write 使用（danger-full-access 下不受 cwd 限制）。
+   */
+  readonly allowProjectTools?: boolean;
+  /**
    * 创建 agent 时解析 provider/model（如 DSH 设置的默认模型）。
    */
   readonly resolveAgentOptions?: () => { provider: string; model: string } | undefined;
@@ -174,7 +181,30 @@ export class SessionManager {
         }
 
         const searchEnabled = this.options.enableSearch ?? true;
-        if (searchEnabled) {
+        const projectTools = this.options.allowProjectTools ?? false;
+        if (projectTools) {
+          // 开放项目工具：允许在工作目录内创建项目/写文件（bash + write + 搜索）。
+          // 注意：本插件不设置 sandbox 模式，只开放工具；实际能写到哪由 DSH 当前
+          // 权限决定（workspace-write 时限制在 cwd 内，danger-full-access 时不受限）。
+          // 因此开启前请确认 DSH 权限为 workspace-write（README 有说明）。
+          try {
+            agentCtx.tools.restrict({ allow: ['bash', 'write', 'web_search'] });
+          } catch (err) {
+            console.error('[wechat] restrict(project) failed:', err instanceof Error ? err.message : String(err));
+          }
+          agentCtx.systemPrompt.section({
+            name: 'wechat-bot-mode',
+            order: -50,
+            text:
+              '你是运行在 DeepSeek Harness 中的个人微信项目助手。' +
+              '你可以：1) 联网搜索（web_search）；2) 在当前工作目录内创建子项目、写文件（bash/write 工具）。' +
+              '必须遵守：1) 所有文件操作只在当前工作目录内进行（你有一个 cwd，不要越界到其他目录）；' +
+              '2) 当对方让你"创建一个项目/子项目"时，先在工作目录下 `mkdir` 建一个子目录，再在其中创建所需文件；' +
+              '3) 只输出清晰的中文进度说明和结果；' +
+              '4) 严禁输出 ``<tool_calls>``、``<invoke>`` 这类标记，也不要在回复里贴大段命令代码；' +
+              '5) 不确定能否做的操作（如删除、系统级命令）先问对方确认，不做危险操作。',
+          });
+        } else if (searchEnabled) {
           // 仅开放 web_search：用 restrict 裁掉 preset 提供的 bash/fs 等其他工具
           try {
             agentCtx.tools.restrict({ allow: ['web_search'] });

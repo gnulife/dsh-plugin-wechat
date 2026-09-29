@@ -105,15 +105,25 @@ WECHAT_WORKSPACE=/Users/you/my-projects bash scripts/service.sh start
 ```
 
 或在 **DSH 插件配置界面**（设置 → 插件 → dsh-plugin-wechat）填写 `workspace` 字段。
-配置 `workspace` 后，微信里让它"帮我创建 xxx 项目"，它就会在工作目录下创建。
 
-> 说明：工作目录就是微信 agent 能读写的根目录（即它的 `cwd`）。改后需重启 DSH 生效（`service.sh start`）。
+想让它在微信里真正**创建项目、写文件**，还要额外打开 `allowProjectTools`（默认关闭）：
+
+```bash
+WECHAT_ALLOW_PROJECT_TOOLS=true WECHAT_WORKSPACE=/Users/you/my-projects bash scripts/service.sh start
+```
+
+或在插件配置界面把 `allowProjectTools` 打开。开启后它会用 `bash`/`write` 在工作目录下创建子目录和文件；
+默认关闭时只能聊天 + 联网搜索，不碰你的文件系统。
+
+> 说明：工作目录就是微信 agent 的 `cwd`。本插件只负责"开放哪些工具"，实际能写到哪由 DSH 权限决定——
+> 建议保持 `workspace-write`（限制在 cwd 内）；若 DSH 处于 `danger-full-access`，agent 不受 cwd 限制。
 
 ### 其他配置
 
 | 环境变量 | 默认值 | 说明 |
 |----------|--------|------|
 | `WECHAT_WORKSPACE` | dsh 启动目录 | 微信 agent 的工作目录（可在插件配置界面填 `workspace`） |
+| `WECHAT_ALLOW_PROJECT_TOOLS` | false | `true`=允许在 cwd 内创建项目/写文件（bash+write），默认只聊天+搜索 |
 | `WECHAT_SESSION_MODE` | `per-user` | `single`=所有微信好友共用一个会话 |
 | `WECHAT_FORCE_LOGIN` | false | `true`=启动时强制重新扫码登录 |
 | `WECHAT_MODE` | `native` | `bridge`=启用 OpenAI 兼容桥（兼容旧客户端） |

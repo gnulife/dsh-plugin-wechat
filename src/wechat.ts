@@ -11,14 +11,18 @@
 import type { Context } from '@deepseek-ai/cordis';
 import type {} from '@deepseek-ai/dsh-agent-default-model';
 import z from '@deepseek-ai/schemastery';
+import { installSettingsSection, settingsNamespace } from '@deepseek-ai/dsh-settings';
 
 import { Bridge } from './bridge.js';
-import { SessionManager } from './sessions.js';
+import { SessionManager, type SessionManagerOptions } from './sessions.js';
 import { WechatChannel } from './wechat-channel.js';
 
 export const name = 'wechat';
 // 依赖 DSH 的 agent 注册表与默认模型选择服务；就绪前插件保持未激活。
 export const inject = ['agents', 'agentDefaultModel'];
+
+/** 配置界面使用的 settings namespace（DSH 插件配置界面据此渲染字段）。 */
+export const SETTINGS_NS = settingsNamespace('wechat');
 
 /**
  * 插件配置 schema：DSH 插件配置界面据此生成表单（可在 UI 里配置工作目录等）。
@@ -38,6 +42,7 @@ export const Config = z.object({
   workspace: z.string(),
   forceLogin: z.boolean(),
   enableSearch: z.boolean(),
+  allowProjectTools: z.boolean(),
 });
 
 export interface WechatConfig {
@@ -68,6 +73,8 @@ export interface WechatConfig {
   forceLogin?: boolean;
   /** 是否允许联网搜索(web_search 工具)。默认 true。 */
   enableSearch?: boolean;
+  /** 是否允许微信 agent 在工作目录内创建项目/写文件(bash/write)。默认 false(安全)。 */
+  allowProjectTools?: boolean;
 }
 
 const DEFAULTS = {
@@ -87,14 +94,49 @@ export async function apply(
   ctx: Context,
   rawConfig: WechatConfig = {},
 ): Promise<() => Promise<void>> {
-  const config = normalizeConfig(rawConfig);
+  let config = normalizeConfig(rawConfig);
   const logger = ctx.logger('wechat');
 
-  const sessions = new SessionManager(ctx, {
+  // SessionManager 每次新建会话都会读 options；用 getter 转发到最新 config，
+  // 界面里改 workspace 等配置后，无需重启即可对新建会话生效。
+  const sessionOptions: SessionManagerOptions = {
     sessionPrefix: 'wechat',
-    cwd: config.workspace,
-    idleTimeoutMs: config.idleTimeoutMs,
-    enableSearch: config.enableSearch,
+    get cwd() {
+      return config.workspace;
+    },
+    get idleTimeoutMs() {
+      return config.idleTimeoutMs;
+    },
+    get enableSearch() {
+      return config.enableSearch;
+    },
+    get allowProjectTools() {
+      return config.allowProjectTools;
+    },
+  };
+
+  // 注册配置界面 namespace（DSH Web → 设置 → 插件 → dsh-plugin-wechat）。
+  // 让配置界面能读/改 workspace 等工作目录。
+  // base 传"已解析的生效值"：解析顺序是 schema 默认 → base → 用户文档，
+  // 传 rawConfig 会让界面把没写过的字段显示成空白，传 config 才是真实生效值。
+  // settings 服务存在时，setSource 收到当前生效值的读取器；界面改完后 onChange 被调用。
+  // settings 服务不存在时 installSettingsSection 自动跳过，插件照用 entry 配置。
+  try {
+    installSettingsSection(ctx, SETTINGS_NS, Config, { ...config }, {
+      setSource: (current) => {
+        // 保留环境变量优先级：normalizeConfig 内 env 始终覆盖用户设置值。
+        config = normalizeConfig({ ...rawConfig, ...current() });
+      },
+      onChange: () => {
+        logger.info('wechat settings 已更新并生效（workspace 等下次新建会话时生效）');
+      },
+    });
+  } catch (err) {
+    logger.warn('注册 wechat 配置界面失败（不影响运行）：', (err as Error).message);
+  }
+
+  const sessions = new SessionManager(ctx, {
+    ...sessionOptions,
     resolveAgentOptions: () => {
       const selection = ctx.agentDefaultModel?.currentSelection();
       return {
@@ -184,6 +226,8 @@ interface ResolvedConfig {
   forceLogin: boolean;
   /** 是否开放 web_search。默认 true。 */
   enableSearch: boolean;
+  /** 是否允许工作目录内创建项目/写文件。默认 false。 */
+  allowProjectTools: boolean;
 }
 
 function normalizeConfig(raw: WechatConfig): ResolvedConfig {
@@ -204,6 +248,7 @@ function normalizeConfig(raw: WechatConfig): ResolvedConfig {
     workspace: env.WECHAT_WORKSPACE ?? raw.workspace ?? process.cwd(),
     forceLogin: env.WECHAT_FORCE_LOGIN === 'true' || raw.forceLogin || DEFAULTS.forceLogin,
     enableSearch: env.WECHAT_ENABLE_SEARCH !== 'false' && raw.enableSearch !== false,
+    allowProjectTools: env.WECHAT_ALLOW_PROJECT_TOOLS === 'true' || raw.allowProjectTools === true,
   };
 }
 
