@@ -8,7 +8,7 @@
 - [ ] 版本号符合 [语义化版本](https://semver.org/lang/zh-CN/)（`0.x` 开发期；`1.0.0` 首发正式）
 - [ ] `package.json`：`name/version/description/files/bin/repository/license/keywords` 完整
 - [ ] `files` 白名单只含：`dist`、`cordis.patch.yml`、`README.md`、`scripts`、`LICENSE`
-- [ ] 仓库无硬编码密钥/token（密钥都在 `~/.dsh`、`~/.openclaw` 用户目录）
+- [ ] 仓库无硬编码密钥/token（密钥都在 `~/.dsh` 用户目录）
 - [ ] `pnpm build` 通过，`dist/` 为最新
 
 ## 认证要求（npm 2026 新政）
@@ -62,7 +62,7 @@ git push --tags
 ## 安装链路自检（发布后）
 
 ```bash
-npx -y dsh-plugin-wechat           # 一条命令全自动（装插件到 DSH + OpenClaw + 扫码 + 启动）
+npx -y dsh-plugin-wechat           # 一条命令全自动（装插件到 DSH + 扫码 + 启动）
 # 或分步：
 npm i -g dsh-plugin-wechat && dsh-wechat-setup
 # 或仅装插件（DSH 官方机制）：

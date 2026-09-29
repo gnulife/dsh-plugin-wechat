@@ -1,8 +1,8 @@
 # dsh-plugin-wechat bundle patch —— 由 `dsh plugin --profile web add dsh-plugin-wechat`
 # 自动追加为 profile bundle 层（package.json 的 dsh.profile.bundles），无需手动编辑任何 DSH 文件。
 #
-# 插件在 DSH 进程内启动一个 OpenAI 兼容 HTTP 端点（默认 127.0.0.1:8787），
-# OpenClaw（微信通道）把模型请求指向这里，DSH 就是微信机器人的大脑。
+# 默认 native 模式：DSH 单进程直连微信官方协议，微信消息直接进 ctx.agents，无需任何网关。
+# （下方 host/port/apiKey 仅 mode=bridge 的 OpenAI 兼容回退模式使用。）
 #
 # 可覆盖配置（也支持环境变量，见 README 配置表）：
 #   host           监听地址,默认 127.0.0.1(仅本机,建议保持)

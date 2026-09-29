@@ -1,7 +1,7 @@
 {
   "name": "dsh-plugin-wechat",
-  "version": "0.5.0",
-  "description": "DeepSeek Harness (DSH) 个人微信 ClawBot 插件：OpenClaw 负责微信通道（扫码登录/收发消息），DSH 负责大脑，两者通过 OpenAI 兼容协议桥接。",
+  "version": "0.5.1",
+  "description": "DeepSeek Harness (DSH) 个人微信 ClawBot 插件：内置腾讯官方 ClawBot(iLink) 微信协议，DSH 单进程完成扫码登录、收发消息与 agent 回复，无需任何外部网关。",
   "type": "module",
   "main": "dist/wechat.js",
   "types": "dist/wechat.d.ts",
